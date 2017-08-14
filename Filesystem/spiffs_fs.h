@@ -25,7 +25,7 @@ class SPIFFilesystem : public IFilesystem {
 			return ESP_ERR_NOT_FOUND;
 		}
 
-		vfs_spiffs_register(data_partition->address, data_partition->size, 256, 4096, 4096);
+		vfs_spiffs_register(data_partition->address, /*data_partition->size*/ 256*1024 , 256, 8192, 4096);
 		return 0;
 	}
 	virtual int format() {
@@ -49,7 +49,7 @@ class SPIFFilesystem : public IFilesystem {
 		uint32_t total;
 		uint32_t used;
 		spiffs_fs_stat(&total, &used);
-		return used;
+		return total- used;
 	}
 
 };

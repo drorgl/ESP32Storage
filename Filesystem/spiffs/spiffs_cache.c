@@ -5,7 +5,7 @@
  *      Author: petera
  */
 
-#include "esp_attr.h"
+#include <esp_attr.h>
 #include "spiffs.h"
 #include "spiffs_nucleus.h"
 
@@ -21,7 +21,7 @@ static IRAM_ATTR spiffs_cache_page *spiffs_cache_page_get(spiffs *fs, spiffs_pag
     if ((cache->cpage_use_map & (1<<i)) &&
         (cp->flags & SPIFFS_CACHE_FLAG_TYPE_WR) == 0 &&
         cp->pix == pix ) {
-      SPIFFS_CACHE_DBG("CACHE_GET: have cache page "_SPIPRIi" for "_SPIPRIpg"\n", i, pix);
+      //SPIFFS_CACHE_DBG("CACHE_GET: have cache page "_SPIPRIi" for "_SPIPRIpg"\n", i, pix);
       cp->last_access = cache->last_access;
       return cp;
     }
@@ -31,7 +31,7 @@ static IRAM_ATTR spiffs_cache_page *spiffs_cache_page_get(spiffs *fs, spiffs_pag
 }
 
 // frees cached page
-static IRAM_ATTR s32_t spiffs_cache_page_free(spiffs *fs, int ix, u8_t write_back) {
+static s32_t IRAM_ATTR spiffs_cache_page_free(spiffs *fs, int ix, u8_t write_back) {
   s32_t res = SPIFFS_OK;
   spiffs_cache *cache = spiffs_get_cache(fs);
   spiffs_cache_page *cp = spiffs_get_cache_page_hdr(fs, cache, ix);
@@ -40,24 +40,27 @@ static IRAM_ATTR s32_t spiffs_cache_page_free(spiffs *fs, int ix, u8_t write_bac
         (cp->flags & SPIFFS_CACHE_FLAG_TYPE_WR) == 0 &&
         (cp->flags & SPIFFS_CACHE_FLAG_DIRTY)) {
       u8_t *mem =  spiffs_get_cache_page(fs, cache, ix);
+      SPIFFS_CACHE_DBG("CACHE_FREE: write cache page "_SPIPRIi" pix "_SPIPRIpg"\n", ix, cp->pix);
       res = SPIFFS_HAL_WRITE(fs, SPIFFS_PAGE_TO_PADDR(fs, cp->pix), SPIFFS_CFG_LOG_PAGE_SZ(fs), mem);
     }
 
-    cp->flags = 0;
-    cache->cpage_use_map &= ~(1 << ix);
-
+#if SPIFFS_CACHE_WR
     if (cp->flags & SPIFFS_CACHE_FLAG_TYPE_WR) {
       SPIFFS_CACHE_DBG("CACHE_FREE: free cache page "_SPIPRIi" objid "_SPIPRIid"\n", ix, cp->obj_id);
-    } else {
+    } else
+#endif
+    {
       SPIFFS_CACHE_DBG("CACHE_FREE: free cache page "_SPIPRIi" pix "_SPIPRIpg"\n", ix, cp->pix);
     }
+    cache->cpage_use_map &= ~(1 << ix);
+    cp->flags = 0;
   }
 
   return res;
 }
 
 // removes the oldest accessed cached page
-static IRAM_ATTR s32_t spiffs_cache_page_remove_oldest(spiffs *fs, u8_t flag_mask, u8_t flags) {
+static s32_t IRAM_ATTR spiffs_cache_page_remove_oldest(spiffs *fs, u8_t flag_mask, u8_t flags) {
   s32_t res = SPIFFS_OK;
   spiffs_cache *cache = spiffs_get_cache(fs);
 
@@ -99,7 +102,7 @@ static IRAM_ATTR spiffs_cache_page *spiffs_cache_page_allocate(spiffs *fs) {
       spiffs_cache_page *cp = spiffs_get_cache_page_hdr(fs, cache, i);
       cache->cpage_use_map |= (1<<i);
       cp->last_access = cache->last_access;
-      SPIFFS_CACHE_DBG("CACHE_ALLO: allocated cache page "_SPIPRIi"\n", i);
+      //SPIFFS_CACHE_DBG("CACHE_ALLO: allocated cache page "_SPIPRIi"\n", i);
       return cp;
     }
   }
@@ -137,7 +140,7 @@ s32_t IRAM_ATTR spiffs_phys_rd(
 #endif
     cp->last_access = cache->last_access;
     u8_t *mem =  spiffs_get_cache_page(fs, cache, cp->ix);
-    memcpy(dst, &mem[SPIFFS_PADDR_TO_PAGE_OFFSET(fs, addr)], len);
+    _SPIFFS_MEMCPY(dst, &mem[SPIFFS_PADDR_TO_PAGE_OFFSET(fs, addr)], len);
   } else {
     if ((op & SPIFFS_OP_TYPE_MASK) == SPIFFS_OP_T_OBJ_LU2) {
       // for second layer lookup functions, we do not cache in order to prevent shredding
@@ -154,6 +157,7 @@ s32_t IRAM_ATTR spiffs_phys_rd(
     if (cp) {
       cp->flags = SPIFFS_CACHE_FLAG_WRTHRU;
       cp->pix = SPIFFS_PADDR_TO_PAGE(fs, addr);
+      SPIFFS_CACHE_DBG("CACHE_ALLO: allocated cache page "_SPIPRIi" for pix "_SPIPRIpg "\n", cp->ix, cp->pix);
 
       s32_t res2 = SPIFFS_HAL_READ(fs,
           addr - SPIFFS_PADDR_TO_PAGE_OFFSET(fs, addr),
@@ -164,7 +168,7 @@ s32_t IRAM_ATTR spiffs_phys_rd(
         res = res2;
       }
       u8_t *mem =  spiffs_get_cache_page(fs, cache, cp->ix);
-      memcpy(dst, &mem[SPIFFS_PADDR_TO_PAGE_OFFSET(fs, addr)], len);
+      _SPIFFS_MEMCPY(dst, &mem[SPIFFS_PADDR_TO_PAGE_OFFSET(fs, addr)], len);
     } else {
       // this will never happen, last resort for sake of symmetry
       s32_t res2 = SPIFFS_HAL_READ(fs, addr, len, dst);
@@ -202,7 +206,7 @@ s32_t IRAM_ATTR spiffs_phys_wr(
     }
 
     u8_t *mem =  spiffs_get_cache_page(fs, cache, cp->ix);
-    memcpy(&mem[SPIFFS_PADDR_TO_PAGE_OFFSET(fs, addr)], src, len);
+    _SPIFFS_MEMCPY(&mem[SPIFFS_PADDR_TO_PAGE_OFFSET(fs, addr)], src, len);
 
     cache->last_access++;
     cp->last_access = cache->last_access;
@@ -257,6 +261,7 @@ spiffs_cache_page IRAM_ATTR *spiffs_cache_page_allocate_by_fd(spiffs *fs, spiffs
   cp->flags = SPIFFS_CACHE_FLAG_TYPE_WR;
   cp->obj_id = fd->obj_id;
   fd->cache_page = cp;
+  SPIFFS_CACHE_DBG("CACHE_ALLO: allocated cache page "_SPIPRIi" for fd "_SPIPRIfd ":"_SPIPRIid "\n", cp->ix, fd->file_nbr, fd->obj_id);
   return cp;
 }
 
@@ -300,7 +305,7 @@ void IRAM_ATTR spiffs_cache_init(spiffs *fs) {
 
   cache.cpage_use_map = 0xffffffff;
   cache.cpage_use_mask = cache_mask;
-  memcpy(fs->cache, &cache, sizeof(spiffs_cache));
+  _SPIFFS_MEMCPY(fs->cache, &cache, sizeof(spiffs_cache));
 
   spiffs_cache *c = spiffs_get_cache(fs);
 

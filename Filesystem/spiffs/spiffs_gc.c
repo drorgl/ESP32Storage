@@ -1,4 +1,4 @@
-#include "esp_attr.h"
+#include <esp_attr.h>
 #include "spiffs.h"
 #include "spiffs_nucleus.h"
 
@@ -197,7 +197,7 @@ s32_t IRAM_ATTR spiffs_gc_check(
 }
 
 // Updates page statistics for a block that is about to be erased
-s32_t IRAM_ATTR  spiffs_gc_erase_page_stats(
+s32_t IRAM_ATTR spiffs_gc_erase_page_stats(
     spiffs *fs,
     spiffs_block_ix bix) {
   s32_t res = SPIFFS_OK;

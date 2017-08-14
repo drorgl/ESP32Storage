@@ -209,7 +209,7 @@ static void list(char *path, char *match) {
 				ent->d_name
 			);
 		}
-		vTaskDelay(1);
+		taskYIELD() ;
 	}
 	if (total) {
 		printf("-----------------------------------\r\n");
@@ -333,18 +333,22 @@ out_error:
 //--------------------------------
 static void writeTest(char *fname)
 {
+	printf("enter!!!!!!!");
 	printf("==== Write to file \"%s\" ====\r\n", fname);
-
+	printf("writing....");
 	int n, res, tot, len;
 	char buf[40];
 
+	printf("opening...");
 	FILE *fd = fopen(fname, "wb");
 	if (fd == NULL) {
 		printf("     Error opening file\r\n");
 		return;
 	}
+
+	printf("writing...");
 	tot = 0;
-	for (n = 1; n < 1000; n++) {
+	for (n = 1; n < 10; n++) {
 		printf(".");
 		sprintf(buf, "ESP32 spiffs write to file, line %d\r\n", n);
 		len = strlen(buf);
@@ -354,7 +358,7 @@ static void writeTest(char *fname)
 			break;
 		}
 		tot += res;
-		vTaskDelay(1);
+		taskYIELD();
 	}
 	printf("     %d bytes written\r\n", tot);
 	res = fclose(fd);
@@ -394,7 +398,7 @@ static void readTest(char *fname)
 		total_read += read_len;
 		//printf("-%s", buf);
 		printf(".");
-		vTaskDelay(1);
+		taskYIELD() ;
 	}
 	/*
 
@@ -491,33 +495,40 @@ void test_fs(void *) {
 	printf("\r\n\n");
 
 	//if (spiffs_is_mounted) {
-	vTaskDelay(500 / portTICK_RATE_MS);
+	taskYIELD();
 	printf("memory: %d \r\n", system_get_free_heap_size());
 
+	taskYIELD();
 	writeTest("/spiffs/test.txt");
 	printf("memory: %d \r\n", system_get_free_heap_size());
 
+	taskYIELD();
 	readTest("/spiffs/test.txt");
 	printf("memory: %d \r\n", system_get_free_heap_size());
 
+	taskYIELD();
 	readTest("/spiffs/spiffs.info");
 	printf("memory: %d \r\n", system_get_free_heap_size());
 
+	taskYIELD();
 	list("/spiffs/", NULL);
 	printf("memory: %d \r\n", system_get_free_heap_size());
 
 	printf("\r\n");
 
+	taskYIELD();
 	mkdirTest("/spiffs/newdir");
 	printf("memory: %d \r\n", system_get_free_heap_size());
 
 	printf("==== List content of the directory \"images\" ====\r\n\r\n");
 	printf("memory: %d \r\n", system_get_free_heap_size());
 
+	taskYIELD();
 	list("/spiffs/images", NULL);
 	printf("memory: %d \r\n", system_get_free_heap_size());
 	printf("\r\n");
 
+	taskYIELD();
 	remove_all("/spiffs/",NULL);
 	//}
 

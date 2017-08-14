@@ -30,8 +30,8 @@
  *
  */
 
-#include "freertos/FreeRTOS.h"
-#include "esp_attr.h"
+#include <freertos/FreeRTOS.h>
+#include <esp_attr.h>
 #include "mutex.h"
 
 

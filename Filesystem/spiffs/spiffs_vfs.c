@@ -169,7 +169,7 @@ static int IRAM_ATTR vfs_spiffs_getstat(spiffs_file fd, spiffs_stat *st, spiffs_
     int res = SPIFFS_fstat(&fs, fd, st);
     if (res == SPIFFS_OK) {
         // Get file's time information from metadata
-        memcpy(metadata, st->meta, sizeof(spiffs_metadata_t));
+        memcpy(metadata, st-> meta, sizeof(spiffs_metadata_t));
 	}
     return res;
 }
@@ -177,6 +177,7 @@ static int IRAM_ATTR vfs_spiffs_getstat(spiffs_file fd, spiffs_stat *st, spiffs_
 // ## path does not contain '/spiffs' prefix !
 //---------------------------------------------------------------------------
 static int IRAM_ATTR vfs_spiffs_open(const char *path, int flags, int mode) {
+	printf("opening...1");
 	int fd, result = 0, exists = 0;
 	spiffs_stat stat;
 	spiffs_metadata_t meta;
@@ -188,6 +189,8 @@ static int IRAM_ATTR vfs_spiffs_open(const char *path, int flags, int mode) {
 		return -1;
 	}
 
+	printf("opening...2");
+
     // Add file to file list. List index is file descriptor.
     int res = list_add(&files, file, &fd);
     if (res) {
@@ -196,11 +199,17 @@ static int IRAM_ATTR vfs_spiffs_open(const char *path, int flags, int mode) {
     	return -1;
     }
 
+	printf("opening...3");
+
     // Check if file exists
     if (SPIFFS_stat(&fs, path, &stat) == SPIFFS_OK) exists = 1;
 
+	printf("opening...4");
+
     // Make a copy of path
 	strlcpy(file->path, path, MAXNAMLEN);
+
+	printf("opening...5");
 
     // Open file
     spiffs_flags spiffs_mode = 0;
@@ -223,6 +232,8 @@ static int IRAM_ATTR vfs_spiffs_open(const char *path, int flags, int mode) {
 
     if (flags & O_TRUNC)
     	spiffs_mode |= SPIFFS_TRUNC;
+
+	printf("opening...6");
 
     if (is_dir(path)) {
         char npath[PATH_MAX + 1];
@@ -250,11 +261,15 @@ static int IRAM_ATTR vfs_spiffs_open(const char *path, int flags, int mode) {
         }
     }
 
+	printf("opening...7");
+
     if (result != 0) {
     	list_remove(&files, fd, 1);
     	errno = result;
     	return -1;
     }
+
+	printf("opening...8");
 
     res = vfs_spiffs_getstat(file->spiffs_file, &stat, &meta);
 	if (res == SPIFFS_OK) {
@@ -839,6 +854,7 @@ exit:
 
 //==========================
 void IRAM_ATTR vfs_spiffs_register(uint32_t phys_addr, uint32_t phys_size, uint32_t log_page_size, uint32_t log_block_size, uint32_t erase_size) {
+	printf("Registering...");
 	_spiffs_erase_size = erase_size;
 	_spiffs_phys_addr = phys_addr;
 	_spiffs_phys_size = phys_size;

@@ -10,15 +10,12 @@
 
 IFilesystem *_fs;
 
-//================
-void setup()
-{
-	esp_log_level_set("*", esp_log_level_t::ESP_LOG_VERBOSE);
+void runTest(void *) {
 	printf("start memory: %d \r\n", system_get_free_heap_size());
 
 	//_fs = new FATFilesystem();
 	_fs = new SPIFFilesystem();
-	
+
 	_fs->format();
 	printf("format memory: %d \r\n", system_get_free_heap_size());
 	_fs->init();
@@ -37,11 +34,19 @@ void setup()
 	free(_fs);
 	printf("free memory: %d \r\n", system_get_free_heap_size());
 
-	
+
 
 	while (1) {
 		vTaskDelay(1000 / portTICK_RATE_MS);
 	}
+}
+
+//================
+void setup()
+{
+	esp_log_level_set("*", esp_log_level_t::ESP_LOG_VERBOSE);
+	//xTaskCreate(&runTest, "runTest", 4096, NULL, NULL, NULL);
+	runTest(NULL);
 }
 
 void loop() {
