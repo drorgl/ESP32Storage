@@ -18,7 +18,7 @@ extern "C" {
 }
 #include "wear_levelling.h"
 
-static const char *TAG = "vfs_fat_spiflash";
+
 
 esp_err_t custom_esp_vfs_fat_spiflash_mount(const char* base_path,
 	const char* partition_label,

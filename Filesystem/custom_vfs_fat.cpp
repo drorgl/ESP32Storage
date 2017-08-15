@@ -27,7 +27,7 @@ extern "C" {
 #include "wear_levelling.h"
 #include "diskio_spiflash.h"
 
-//static const char *TAG = "vfs_fat_spiflash";
+static const char *TAGSPIFF = "vfs_fat_spiflash";
 
 esp_err_t IRAM_ATTR custom_esp_vfs_fat_spiflash_mount(const char* base_path,
 	const char* partition_label,
@@ -42,27 +42,27 @@ esp_err_t IRAM_ATTR custom_esp_vfs_fat_spiflash_mount(const char* base_path,
 
 	esp_partition_t *data_partition = (esp_partition_t *)esp_partition_find_first(ESP_PARTITION_TYPE_DATA, esp_partition_subtype_t::ESP_PARTITION_SUBTYPE_ANY, partition_label);
 	if (data_partition == NULL) {
-		ESP_LOGE(TAG, "Failed to find FATFS partition (type='data', subtype='any', partition_label='%s'). Check the partition table.", partition_label);
+		ESP_LOGE(TAGSPIFF, "Failed to find FATFS partition (type='data', subtype='any', partition_label='%s'). Check the partition table.", partition_label);
 		return ESP_ERR_NOT_FOUND;
 	}
 
 	result = wl_mount(data_partition, wl_handle);
 	if (result != ESP_OK) {
-		ESP_LOGE(TAG, "failed to mount wear levelling layer. result = %i", result);
+		ESP_LOGE(TAGSPIFF, "failed to mount wear levelling layer. result = %i", result);
 		return result;
 	}
 	// connect driver to FATFS
 	BYTE pdrv = 0xFF;
 	if (ff_diskio_get_drive(&pdrv) != ESP_OK) {
-		ESP_LOGD(TAG, "the maximum count of volumes is already mounted");
+		ESP_LOGD(TAGSPIFF, "the maximum count of volumes is already mounted");
 		return ESP_ERR_NO_MEM;
 	}
-	ESP_LOGD(TAG, "using pdrv=%i", pdrv);
+	ESP_LOGD(TAGSPIFF, "using pdrv=%i", pdrv);
 	char drv[3] = { (char)('0' + pdrv), ':', 0 };
 
 	result = ff_diskio_register_wl_partition(pdrv, *wl_handle);
 	if (result != ESP_OK) {
-		ESP_LOGE(TAG, "ff_diskio_register_wl_partition failed pdrv=%i, error - 0x(%x)", pdrv, result);
+		ESP_LOGE(TAGSPIFF, "ff_diskio_register_wl_partition failed pdrv=%i, error - 0x(%x)", pdrv, result);
 		goto fail;
 	}
 	FATFS *fs;
@@ -71,32 +71,32 @@ esp_err_t IRAM_ATTR custom_esp_vfs_fat_spiflash_mount(const char* base_path,
 		// it's okay, already registered with VFS
 	}
 	else if (result != ESP_OK) {
-		ESP_LOGD(TAG, "esp_vfs_fat_register failed 0x(%x)", result);
+		ESP_LOGD(TAGSPIFF, "esp_vfs_fat_register failed 0x(%x)", result);
 		goto fail;
 	}
 
 	// Try to mount partition
 	fresult = f_mount(fs, drv, 1);
 	if (fresult != FR_OK) {
-		ESP_LOGW(TAG, "f_mount failed (%d)", fresult);
+		ESP_LOGW(TAGSPIFF, "f_mount failed (%d)", fresult);
 		if (!(fresult == FR_NO_FILESYSTEM && mount_config->format_if_mount_failed)) {
 			result = ESP_FAIL;
 			goto fail;
 		}
 		workbuf = malloc(workbuf_size);
-		ESP_LOGI(TAG, "Formatting FATFS partition");
+		ESP_LOGI(TAGSPIFF, "Formatting FATFS partition");
 		fresult = f_mkfs(drv, FM_ANY | FM_SFD, workbuf_size, workbuf, workbuf_size);
 		if (fresult != FR_OK) {
 			result = ESP_FAIL;
-			ESP_LOGE(TAG, "f_mkfs failed (%d)", fresult);
+			ESP_LOGE(TAGSPIFF, "f_mkfs failed (%d)", fresult);
 			goto fail;
 		}
 		free(workbuf);
-		ESP_LOGI(TAG, "Mounting again");
+		ESP_LOGI(TAGSPIFF, "Mounting again");
 		fresult = f_mount(fs, drv, 0);
 		if (fresult != FR_OK) {
 			result = ESP_FAIL;
-			ESP_LOGE(TAG, "f_mount failed after formatting (%d)", fresult);
+			ESP_LOGE(TAGSPIFF, "f_mount failed after formatting (%d)", fresult);
 			goto fail;
 		}
 	}
@@ -124,27 +124,27 @@ esp_err_t IRAM_ATTR custom_esp_vfs_fat_spiflash_format(const char* base_path,
 
 	esp_partition_t *data_partition = (esp_partition_t *)esp_partition_find_first(ESP_PARTITION_TYPE_DATA, esp_partition_subtype_t::ESP_PARTITION_SUBTYPE_ANY, partition_label);
 	if (data_partition == NULL) {
-		ESP_LOGE(TAG, "Failed to find FATFS partition (type='data', subtype='any', partition_label='%s'). Check the partition table.", partition_label);
+		ESP_LOGE(TAGSPIFF, "Failed to find FATFS partition (type='data', subtype='any', partition_label='%s'). Check the partition table.", partition_label);
 		return ESP_ERR_NOT_FOUND;
 	}
 
 	result = wl_mount(data_partition, wl_handle);
 	if (result != ESP_OK) {
-		ESP_LOGE(TAG, "failed to mount wear levelling layer. result = %i", result);
+		ESP_LOGE(TAGSPIFF, "failed to mount wear levelling layer. result = %i", result);
 		return result;
 	}
 	// connect driver to FATFS
 	BYTE pdrv = 0xFF;
 	if (ff_diskio_get_drive(&pdrv) != ESP_OK) {
-		ESP_LOGD(TAG, "the maximum count of volumes is already mounted");
+		ESP_LOGD(TAGSPIFF, "the maximum count of volumes is already mounted");
 		return ESP_ERR_NO_MEM;
 	}
-	ESP_LOGD(TAG, "using pdrv=%i", pdrv);
+	ESP_LOGD(TAGSPIFF, "using pdrv=%i", pdrv);
 	char drv[3] = { (char)('0' + pdrv), ':', 0 };
 
 	result = ff_diskio_register_wl_partition(pdrv, *wl_handle);
 	if (result != ESP_OK) {
-		ESP_LOGE(TAG, "ff_diskio_register_wl_partition failed pdrv=%i, error - 0x(%x)", pdrv, result);
+		ESP_LOGE(TAGSPIFF, "ff_diskio_register_wl_partition failed pdrv=%i, error - 0x(%x)", pdrv, result);
 		goto fail;
 	}
 	FATFS *fs;
@@ -153,14 +153,14 @@ esp_err_t IRAM_ATTR custom_esp_vfs_fat_spiflash_format(const char* base_path,
 		// it's okay, already registered with VFS
 	}
 	else if (result != ESP_OK) {
-		ESP_LOGD(TAG, "esp_vfs_fat_register failed 0x(%x)", result);
+		ESP_LOGD(TAGSPIFF, "esp_vfs_fat_register failed 0x(%x)", result);
 		goto fail;
 	}
 
 	// Try to mount partition
 
 	workbuf = malloc(workbuf_size);
-	ESP_LOGI(TAG, "Formatting FATFS partition");
+	ESP_LOGI(TAGSPIFF, "Formatting FATFS partition");
 	fresult = f_mkfs(drv, FM_ANY | FM_SFD, workbuf_size, workbuf, workbuf_size);
 	free(workbuf);
 
@@ -178,7 +178,7 @@ esp_err_t IRAM_ATTR custom_esp_vfs_fat_spiflash_format(const char* base_path,
 
 	if (fresult != FR_OK) {
 		result = ESP_FAIL;
-		ESP_LOGE(TAG, "f_mkfs failed (%d)", fresult);
+		ESP_LOGE(TAGSPIFF, "f_mkfs failed (%d)", fresult);
 		goto fail;
 	}
 

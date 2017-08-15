@@ -52,12 +52,12 @@ u32_t _spiffs_log_page_size;
 u32_t _spiffs_log_block_size;
 
 
-static int IRAM_ATTR vfs_spiffs_open(const char *path, int flags, int mode);
-static size_t IRAM_ATTR vfs_spiffs_write(int fd, const void *data, size_t size);
-static ssize_t IRAM_ATTR vfs_spiffs_read(int fd, void * dst, size_t size);
-static int IRAM_ATTR vfs_spiffs_fstat(int fd, struct stat * st);
-static int IRAM_ATTR vfs_spiffs_close(int fd);
-static off_t IRAM_ATTR vfs_spiffs_lseek(int fd, off_t size, int mode);
+static int  vfs_spiffs_open(const char *path, int flags, int mode);
+static size_t  vfs_spiffs_write(int fd, const void *data, size_t size);
+static ssize_t  vfs_spiffs_read(int fd, void * dst, size_t size);
+static int  vfs_spiffs_fstat(int fd, struct stat * st);
+static int  vfs_spiffs_close(int fd);
+static off_t  vfs_spiffs_lseek(int fd, off_t size, int mode);
 
 typedef struct {
 	DIR dir;
@@ -96,7 +96,7 @@ static u8_t *my_spiffs_cache;
  */
 
 //----------------------------------------------------
-void IRAM_ATTR spiffs_fs_stat(uint32_t *total, uint32_t *used) {
+void  spiffs_fs_stat(uint32_t *total, uint32_t *used) {
 	if (SPIFFS_info(&fs, total, used) != SPIFFS_OK) {
 		*total = 0;
 		*used = 0;
@@ -109,7 +109,7 @@ void IRAM_ATTR spiffs_fs_stat(uint32_t *total, uint32_t *used) {
  *
  */
 //-----------------------------------
-static int IRAM_ATTR is_dir(const char *path) {
+static int  is_dir(const char *path) {
     spiffs_DIR d;
     char npath[PATH_MAX + 1];
     int res = 0;
@@ -142,7 +142,7 @@ static int IRAM_ATTR is_dir(const char *path) {
  *
  */
 //-------------------------------
-static int IRAM_ATTR spiffs_result(int res) {
+static int  spiffs_result(int res) {
     switch (res) {
         case SPIFFS_OK:
         case SPIFFS_ERR_END_OF_OBJECT:
@@ -165,7 +165,7 @@ static int IRAM_ATTR spiffs_result(int res) {
 }
 
 //-----------------------------------------------------------------------------------------------------
-static int IRAM_ATTR vfs_spiffs_getstat(spiffs_file fd, spiffs_stat *st, spiffs_metadata_t *metadata) {
+static int  vfs_spiffs_getstat(spiffs_file fd, spiffs_stat *st, spiffs_metadata_t *metadata) {
     int res = SPIFFS_fstat(&fs, fd, st);
     if (res == SPIFFS_OK) {
         // Get file's time information from metadata
@@ -176,8 +176,7 @@ static int IRAM_ATTR vfs_spiffs_getstat(spiffs_file fd, spiffs_stat *st, spiffs_
 
 // ## path does not contain '/spiffs' prefix !
 //---------------------------------------------------------------------------
-static int IRAM_ATTR vfs_spiffs_open(const char *path, int flags, int mode) {
-	printf("opening...1");
+static int  vfs_spiffs_open(const char *path, int flags, int mode) {
 	int fd, result = 0, exists = 0;
 	spiffs_stat stat;
 	spiffs_metadata_t meta;
@@ -189,8 +188,6 @@ static int IRAM_ATTR vfs_spiffs_open(const char *path, int flags, int mode) {
 		return -1;
 	}
 
-	printf("opening...2");
-
     // Add file to file list. List index is file descriptor.
     int res = list_add(&files, file, &fd);
     if (res) {
@@ -199,17 +196,11 @@ static int IRAM_ATTR vfs_spiffs_open(const char *path, int flags, int mode) {
     	return -1;
     }
 
-	printf("opening...3");
-
     // Check if file exists
     if (SPIFFS_stat(&fs, path, &stat) == SPIFFS_OK) exists = 1;
 
-	printf("opening...4");
-
     // Make a copy of path
 	strlcpy(file->path, path, MAXNAMLEN);
-
-	printf("opening...5");
 
     // Open file
     spiffs_flags spiffs_mode = 0;
@@ -232,8 +223,6 @@ static int IRAM_ATTR vfs_spiffs_open(const char *path, int flags, int mode) {
 
     if (flags & O_TRUNC)
     	spiffs_mode |= SPIFFS_TRUNC;
-
-	printf("opening...6");
 
     if (is_dir(path)) {
         char npath[PATH_MAX + 1];
@@ -261,15 +250,11 @@ static int IRAM_ATTR vfs_spiffs_open(const char *path, int flags, int mode) {
         }
     }
 
-	printf("opening...7");
-
     if (result != 0) {
     	list_remove(&files, fd, 1);
     	errno = result;
     	return -1;
     }
-
-	printf("opening...8");
 
     res = vfs_spiffs_getstat(file->spiffs_file, &stat, &meta);
 	if (res == SPIFFS_OK) {
@@ -284,7 +269,7 @@ static int IRAM_ATTR vfs_spiffs_open(const char *path, int flags, int mode) {
 }
 
 //-------------------------------------------------------------------------------
-static size_t IRAM_ATTR vfs_spiffs_write(int fd, const void *data, size_t size) {
+static size_t  vfs_spiffs_write(int fd, const void *data, size_t size) {
 	vfs_spiffs_file_t *file;
 	int res;
 
@@ -315,7 +300,7 @@ static size_t IRAM_ATTR vfs_spiffs_write(int fd, const void *data, size_t size) 
 }
 
 //-------------------------------------------------------------------------
-static ssize_t IRAM_ATTR vfs_spiffs_read(int fd, void * dst, size_t size) {
+static ssize_t  vfs_spiffs_read(int fd, void * dst, size_t size) {
 	vfs_spiffs_file_t *file;
 	int res;
 
@@ -349,7 +334,7 @@ static ssize_t IRAM_ATTR vfs_spiffs_read(int fd, void * dst, size_t size) {
 }
 
 //---------------------------------------------------------------
-static int IRAM_ATTR vfs_spiffs_fstat(int fd, struct stat * st) {
+static int  vfs_spiffs_fstat(int fd, struct stat * st) {
 	vfs_spiffs_file_t *file;
     spiffs_stat stat;
 	int res;
@@ -392,7 +377,7 @@ static int IRAM_ATTR vfs_spiffs_fstat(int fd, struct stat * st) {
 }
 
 //---------------------------------------------
-static int IRAM_ATTR vfs_spiffs_close(int fd) {
+static int  vfs_spiffs_close(int fd) {
 	vfs_spiffs_file_t *file;
 	int res;
 
@@ -418,7 +403,7 @@ static int IRAM_ATTR vfs_spiffs_close(int fd) {
 }
 
 //---------------------------------------------------------------------
-static off_t IRAM_ATTR vfs_spiffs_lseek(int fd, off_t size, int mode) {
+static off_t  vfs_spiffs_lseek(int fd, off_t size, int mode) {
 	vfs_spiffs_file_t *file;
 	int res;
 
@@ -452,7 +437,7 @@ static off_t IRAM_ATTR vfs_spiffs_lseek(int fd, off_t size, int mode) {
 }
 
 //-------------------------------------------------------------------------
-static int IRAM_ATTR vfs_spiffs_stat(const char * path, struct stat * st) {
+static int  vfs_spiffs_stat(const char * path, struct stat * st) {
 	int fd;
 	int res;
 	fd = vfs_spiffs_open(path, 0, 0);
@@ -463,7 +448,7 @@ static int IRAM_ATTR vfs_spiffs_stat(const char * path, struct stat * st) {
 }
 
 //--------------------------------------------------------
-static int IRAM_ATTR vfs_spiffs_unlink(const char *path) {
+static int  vfs_spiffs_unlink(const char *path) {
     char npath[PATH_MAX + 1];
 
     strlcpy(npath, path, PATH_MAX);
@@ -521,7 +506,7 @@ static int IRAM_ATTR vfs_spiffs_unlink(const char *path) {
 }
 
 //------------------------------------------------------------------------
-static int IRAM_ATTR vfs_spiffs_rename(const char *src, const char *dst) {
+static int  vfs_spiffs_rename(const char *src, const char *dst) {
     if (SPIFFS_rename(&fs, src, dst) < 0) {
     	errno = spiffs_result(fs.err_code);
     	return -1;
@@ -531,7 +516,7 @@ static int IRAM_ATTR vfs_spiffs_rename(const char *src, const char *dst) {
 }
 
 //------------------------------------------------
-static DIR* IRAM_ATTR vfs_spiffs_opendir(const char* name) {
+static DIR*  vfs_spiffs_opendir(const char* name) {
 	struct stat st;
 
     if (strcmp(name, "/") != 0) {
@@ -567,7 +552,7 @@ static DIR* IRAM_ATTR vfs_spiffs_opendir(const char* name) {
 }
 
 //---------------------------------------------------
-static struct dirent* IRAM_ATTR vfs_spiffs_readdir(DIR* pdir) {
+static struct dirent*  vfs_spiffs_readdir(DIR* pdir) {
     int res = 0, len = 0, entries = 0;
 	vfs_spiffs_dir_t* dir = (vfs_spiffs_dir_t*) pdir;
 
@@ -680,7 +665,7 @@ static struct dirent* IRAM_ATTR vfs_spiffs_readdir(DIR* pdir) {
 }
 
 //--------------------------------------------------
-static int IRAM_ATTR vfs_piffs_closedir(DIR* pdir) {
+static int  vfs_piffs_closedir(DIR* pdir) {
 	vfs_spiffs_dir_t* dir = (vfs_spiffs_dir_t*) pdir;
 	int res;
 
@@ -700,7 +685,7 @@ static int IRAM_ATTR vfs_piffs_closedir(DIR* pdir) {
 }
 
 //--------------------------------------------------------------------
-static int IRAM_ATTR vfs_spiffs_mkdir(const char *path, mode_t mode) {
+static int  vfs_spiffs_mkdir(const char *path, mode_t mode) {
     char npath[PATH_MAX + 1];
     int res;
 
@@ -735,7 +720,7 @@ static int IRAM_ATTR vfs_spiffs_mkdir(const char *path, mode_t mode) {
 
 static const char tag[] = "[SPIFFS]";
 
-int IRAM_ATTR spiffs_format() {
+int  spiffs_format() {
 	ESP_LOGI(tag, "Formatting");
 	SPIFFS_unmount(&fs);
 	auto res = SPIFFS_format(&fs);
@@ -747,7 +732,7 @@ int IRAM_ATTR spiffs_format() {
 }
 
 //==================
-int IRAM_ATTR spiffs_mount() {
+int  spiffs_mount() {
 
 
 
@@ -853,7 +838,7 @@ exit:
 }
 
 //==========================
-void IRAM_ATTR vfs_spiffs_register(uint32_t phys_addr, uint32_t phys_size, uint32_t log_page_size, uint32_t log_block_size, uint32_t erase_size) {
+void  vfs_spiffs_register(uint32_t phys_addr, uint32_t phys_size, uint32_t log_page_size, uint32_t log_block_size, uint32_t erase_size) {
 	printf("Registering...");
 	_spiffs_erase_size = erase_size;
 	_spiffs_phys_addr = phys_addr;
@@ -895,7 +880,7 @@ void IRAM_ATTR vfs_spiffs_register(uint32_t phys_addr, uint32_t phys_size, uint3
 }
 
 //=============================
-int IRAM_ATTR spiffs_unmount(int unreg) {
+int  spiffs_unmount(int unreg) {
 
 	if (!spiffs_is_mounted) return 0;
 

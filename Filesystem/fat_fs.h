@@ -14,7 +14,7 @@
 //extern "C" {
 //
 //}
-
+static const char *TAG = "fat_fs";
 
 class FATFilesystem : public IFilesystem {
 private:

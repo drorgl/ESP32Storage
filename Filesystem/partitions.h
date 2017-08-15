@@ -6,7 +6,7 @@
 void patch_partition() {
 	esp_log_level_set("*", esp_log_level_t::ESP_LOG_DEBUG);
 	printf("starting...\r\n");
-	ESP_LOGI(TAG, "Patching partition table");
+	ESP_LOGI(TAGSPIFF, "Patching partition table");
 	{
 		auto it = esp_partition_find(esp_partition_type_t::ESP_PARTITION_TYPE_APP, esp_partition_subtype_t::ESP_PARTITION_SUBTYPE_ANY, NULL);
 		while (it != NULL) {

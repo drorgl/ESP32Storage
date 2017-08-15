@@ -13,7 +13,7 @@ extern "C" {
 
 #include <esp_partition.h>
 
-static const char *TAG = "vfs_spiffs";
+static const char *TAGSPIFF = "vfs_spiffs";
 
 class SPIFFilesystem : public IFilesystem {
 	virtual int init() {
@@ -21,11 +21,11 @@ class SPIFFilesystem : public IFilesystem {
 
 		esp_partition_t *data_partition = (esp_partition_t *)esp_partition_find_first(ESP_PARTITION_TYPE_DATA, esp_partition_subtype_t::ESP_PARTITION_SUBTYPE_ANY, partition_label);
 		if (data_partition == NULL) {
-			ESP_LOGE(TAG, "Failed to find SPIFFS partition (type='data', subtype='any', partition_label='%s'). Check the partition table.", partition_label);
+			ESP_LOGE(TAGSPIFF, "Failed to find SPIFFS partition (type='data', subtype='any', partition_label='%s'). Check the partition table.", partition_label);
 			return ESP_ERR_NOT_FOUND;
 		}
 
-		vfs_spiffs_register(data_partition->address, /*data_partition->size*/ 256*1024 , 256, 8192, 4096);
+		vfs_spiffs_register( data_partition->address, data_partition->size /*256 * 1024*/, 256, 4096, 4096);
 		return 0;
 	}
 	virtual int format() {
@@ -35,7 +35,7 @@ class SPIFFilesystem : public IFilesystem {
 	}
 
 	virtual int deinit() {
-		spiffs_unmount(true);
+		spiffs_unmount(1);
 		return 0;
 	}
 
